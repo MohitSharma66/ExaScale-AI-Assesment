@@ -151,23 +151,21 @@ def override_emission(record_id: int, override: EmissionOverride, db: Session = 
     }
 
 @router.get("")
-def get_emissions(
-    scope: Optional[int] = None,
-    material: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
+def get_emissions(scope: Optional[int] = None, material: Optional[str] = None, db: Session = Depends(get_db)):
+    from sqlalchemy.orm import joinedload
     query = db.query(EmissionRecord)
-    
     if scope is not None:
         query = query.filter(EmissionRecord.scope == scope)
     if material:
         query = query.filter(EmissionRecord.material.ilike(f"%{material}%"))
     
     records = query.all()
-    # Include factor UUID in each record for frontend
+    factor_ids = {r.factor_id for r in records}
+    factors = {f.id: f for f in db.query(EmissionFactor).filter(EmissionFactor.id.in_(factor_ids)).all()}
+    
     result = []
     for r in records:
-        factor = db.query(EmissionFactor).filter(EmissionFactor.id == r.factor_id).first()
+        factor = factors.get(r.factor_id)
         result.append({
             "id": r.id,
             "scope": r.scope,
