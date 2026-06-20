@@ -1,4 +1,13 @@
-const API_BASE = 'http://127.0.0.1:8001/api';
+const API_BASE = (() => {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://127.0.0.1:8001/api';
+    }
+    if (hostname.includes('railway')) {
+        return 'http://backend:8001/api';
+    }
+    return `https://${hostname}/api`;
+})();
 
 let charts = {
     yoy: null,
