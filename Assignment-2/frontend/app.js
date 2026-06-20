@@ -3,10 +3,10 @@ const API_BASE = (() => {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return 'http://127.0.0.1:8001/api';
     }
-    if (hostname.includes('railway')) {
-        return 'http://backend:8001/api';
+    if (hostname.includes('railway.app')) {
+        return 'https://brilliant-strength-production-df8a.up.railway.app/api';
     }
-    return `https://${hostname}/api`;
+    return '/api';
 })();
 
 let charts = {
