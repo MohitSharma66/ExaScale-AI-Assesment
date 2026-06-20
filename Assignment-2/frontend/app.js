@@ -632,7 +632,7 @@ async function loadSourceDetails() {
         return;
     }
     
-    const response = await fetch(`${API_BASE}/emissions/?scope=${scope}&material=${source}`);
+    const response = await fetch(`${API_BASE}/emissions?scope=${scope}&material=${source}`);
     const records = await response.json();
     
     const total = records.reduce((sum, r) => sum + r.calculated_emission, 0);
