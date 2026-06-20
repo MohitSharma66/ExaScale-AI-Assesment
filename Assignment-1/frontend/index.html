@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>APU Demand Forecast</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #1e293b; }
+        header { background: #1e293b; color: white; padding: 1rem 2rem; text-align: center; }
+        .tabs { display: flex; justify-content: center; margin: 1rem 0; }
+        .tab-btn { padding: 0.7rem 2rem; border: none; background: #e2e8f0; cursor: pointer;
+                   font-size: 1rem; margin: 0 0.2rem; border-radius: 8px; transition: 0.2s; }
+        .tab-btn.active { background: #2563eb; color: white; font-weight: 600; }
+        .tab-content { display: none; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s ease; }
+
+        .chart-container, .table-container { 
+            background: white; border-radius: 12px; padding: 1.2rem; margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        h3 { margin-bottom: 0.8rem; }
+
+        .forecast-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .forecast-controls label { font-weight: 600; }
+        select, button { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #cbd5e1; background: white; cursor: pointer; }
+        button.download-btn { background: #2563eb; color: white; border: none; font-weight: 600; }
+
+        .table-wrapper { max-height: 400px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.5rem 0.8rem; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        th { background: #f8fafc; position: sticky; top: 0; z-index: 2; }
+        tr:hover { background: #f1f5f9; }
+
+        .chart-toggle { display: flex; gap: 0.5rem; align-items: center; }
+        .chart-toggle label { font-weight: normal; }
+
+        .current-weather { text-align: center; background: white; border-radius: 12px; padding: 1.2rem; margin: 1rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .current-weather .value { font-size: 3rem; font-weight: 300; }
+        .current-weather .details { display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; }
+        .detail-item { display: flex; flex-direction: column; align-items: center; }
+        .detail-item .label { font-size: 0.8rem; color: #64748b; }
+        .detail-item .val { font-size: 1.2rem; font-weight: 600; }
+
+        .hourly-strip { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
+        .hour-card { flex: 0 0 auto; min-width: 80px; background: #f8fafc; border-radius: 12px; 
+                     padding: 0.8rem 0.5rem; text-align: center; border: 1px solid #e2e8f0; }
+        .hour-card .time { font-weight: 600; margin-bottom: 0.5rem; }
+        .hour-card .temp { font-size: 1.3rem; font-weight: 500; }
+        .hour-card .other { font-size: 0.7rem; color: #475569; margin-top: 0.3rem; }
+        .weather-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 1rem; 
+        }
+        .weather-card { 
+            background: white; padding: 1rem; border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center;
+            animation: fadeUp 0.6s ease forwards;
+        }
+        .weather-card canvas { width: 100% !important; height: 150px !important; }
+
+        .chart-container, .current-weather, .weather-card, .table-container {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .chart-container:hover, .current-weather:hover, .weather-card:hover, .table-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        .next-day-badge {
+            font-size: 0.6rem;
+            background: #facc15;
+            color: #1e293b;
+            padding: 0.1rem 0.4rem;
+            border-radius: 99px;
+            display: inline-block;
+            margin-top: 0.2rem;
+            font-weight: 600;
+        }
+
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .weather-stat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .weather-stat .emoji {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+        .weather-stat .stat-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        .weather-stat .stat-label {
+            font-size: 0.8rem;
+            color: #475569;
+            margin-left: 0.2rem;
+        }
+        .weather-grid .weather-card h4 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .weather-grid .weather-card h4 .emoji-big {
+            font-size: 1.8rem;
+        }
+    </style>
+</head>
+<body>
+    <header><h1>APU Power Demand Forecast – Dhanbad</h1></header>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('forecast')">📈 Forecast</button>
+        <button class="tab-btn" onclick="switchTab('weather')">🌤️ Weather & Holidays</button>
+    </div>
+
+    <div id="forecastTab" class="tab-content active">
+        <div class="chart-container">
+            <div class="forecast-controls">
+                <label>Chart:</label>
+                <select id="chartTypeSelect" onchange="updateForecastDisplay()">
+                    <option value="line">Line Chart</option>
+                    <option value="pie">Pie Chart</option>
+                </select>
+                <label>View:</label>
+                <select id="forecastViewSelect" onchange="updateForecastDisplay()">
+                    <option value="full">Full Day</option>
+                    <option value="hour">Single Hour</option>
+                </select>
+                <select id="hourSelect" style="display:none;" onchange="updateForecastDisplay()"></select>
+                <button class="download-btn" onclick="downloadCSV()">⬇ Download CSV</button>
+            </div>
+            <canvas id="forecastChart"></canvas>
+            <canvas id="pieChart" style="display:none; max-width:400px; margin:auto;"></canvas>
+        </div>
+        <div class="table-container">
+            <h3>📋 Detailed Forecast</h3>
+            <div class="table-wrapper">
+                <table id="forecastTable">
+                    <thead><tr><th>Time</th><th>F1 (kW)</th><th>F2 (kW)</th><th>F3 (kW)</th><th>Total (kW)</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="weatherTab" class="tab-content">
+        <div class="chart-container">
+            <h3>📉 Weather Trend (Next 24h)</h3>
+            <p id="weatherTrendRange" style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;"></p>
+            <div class="weather-grid" id="weatherGrid"></div>
+        </div>
+        <div class="current-weather" id="currentWeatherCard"></div>
+        <div class="chart-container">
+            <h3>🕒 Hourly Forecast</h3>
+            <div class="hourly-strip" id="hourlyStrip"></div>
+        </div>
+        <div class="table-container">
+            <h3>📅 Upcoming Holidays</h3>
+            <p id="holidayWindow" style="font-size:0.85rem; color:#64748b; margin-bottom:0.5rem;"></p>
+            <table>
+                <thead><tr><th>Date</th><th>Name</th><th>Type</th></tr></thead>
+                <tbody id="holidayBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let forecastData, contextData;
+        let forecastLabels = [];
+        let forecastF1, forecastF2, forecastF3, forecastTotal;
+        let lineChart, pieChart;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tab === 'forecast') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('forecastTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('weatherTab').classList.add('active');
+            }
+        }
+
+        async function fetchData(url) { const r = await fetch(url); return r.json(); }
+
+        async function init() {
+            [forecastData, contextData] = await Promise.all([fetchData('/forecast'), fetchData('/context')]);
+            forecastLabels = forecastData.timestamps.map(t => t.substring(11, 16));
+            forecastF1 = forecastData.F1;
+            forecastF2 = forecastData.F2;
+            forecastF3 = forecastData.F3;
+            forecastTotal = forecastF1.map((v, i) => v + forecastF2[i] + forecastF3[i]);
+
+            const hourSelect = document.getElementById('hourSelect');
+            for (let h = 0; h < 24; h++) hourSelect.innerHTML += `<option value="${h}">${h}:00</option>`;
+            document.getElementById('forecastViewSelect').addEventListener('change', function() {
+                hourSelect.style.display = this.value === 'hour' ? 'inline-block' : 'none';
+                updateForecastDisplay();
+            });
+            updateForecastDisplay();
+
+            buildWeatherSparklines();
+            buildCurrentWeather();
+            buildHourlyWeatherCards();
+            buildHolidayTable();
+        }
+
+        function getNowLabel() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            let closestIdx = 0;
+            let minDiff = Infinity;
+            forecastLabels.forEach((label, i) => {
+                const [h, m] = label.split(':').map(Number);
+                const labelMinutes = h * 60 + m;
+                const diff = Math.abs(labelMinutes - currentMinutes);
+                if (diff < minDiff) { minDiff = diff; closestIdx = i; }
+            });
+            return forecastLabels[closestIdx];
+        }
+
+        function updateForecastDisplay() {
+            const chartType = document.getElementById('chartTypeSelect').value;
+            const view = document.getElementById('forecastViewSelect').value;
+            const hour = view === 'hour' ? parseInt(document.getElementById('hourSelect').value) : null;
+
+            document.getElementById('forecastChart').style.display = chartType === 'line' ? 'block' : 'none';
+            document.getElementById('pieChart').style.display = chartType === 'pie' ? 'block' : 'none';
+
+            if (lineChart) { lineChart.destroy(); lineChart = null; }
+            if (pieChart) { pieChart.destroy(); pieChart = null; }
+
+            if (chartType === 'line') {
+                buildLineChart(view, hour);
+            } else {
+                buildPieChart(view, hour);
+            }
+
+            updateForecastTable(view, hour);
+        }
+
+        function buildLineChart(view, hour) {
+            let labels, f1, f2, f3, total;
+            
+            if (view === 'hour') {
+                const indices = forecastData.timestamps
+                    .map((t, i) => new Date(t).getHours() === hour ? i : -1)
+                    .filter(i => i >= 0);
+                labels = indices.map(i => forecastLabels[i]);
+                f1 = indices.map(i => forecastF1[i]);
+                f2 = indices.map(i => forecastF2[i]);
+                f3 = indices.map(i => forecastF3[i]);
+                total = indices.map(i => forecastTotal[i]);
+            } else {
+                labels = forecastLabels;
+                f1 = forecastF1;
+                f2 = forecastF2;
+                f3 = forecastF3;
+                total = forecastTotal;
+            }
+
+            const annotations = view === 'full' ? buildHolidayAnnotations() : {};
+
+            const nowLabel = getNowLabel();
+            if (labels.includes(nowLabel)) {
+                annotations['nowLine'] = {
+                    type: 'line',
+                    xMin: nowLabel,
+                    xMax: nowLabel,
+                    borderColor: 'red',
+                    borderWidth: 2,
+                    label: {
+                        content: 'Now',
+                        display: true,
+                        position: 'start',
+                        backgroundColor: 'rgba(255,0,0,0.8)'
+                    }
+                };
+            }
+
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(document.getElementById('forecastChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'F1', data: f1, borderColor: '#2563eb', fill: false, pointRadius: 0 },
+                        { label: 'F2', data: f2, borderColor: '#16a34a', fill: false, pointRadius: 0 },
+                        { label: 'F3', data: f3, borderColor: '#ea580c', fill: false, pointRadius: 0 },
+                        { label: 'Total', data: total, borderColor: '#1e293b', borderDash: [5,5], fill: false, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { annotation: { annotations } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Time (IST)' },
+                            ticks: { maxTicksLimit: view === 'hour' ? 6 : 12 }
+                        },
+                        y: { title: { display: true, text: 'Power (kW)' } }
+                    }
+                }
+            });
+        }
+
+        function buildHolidayAnnotations() {
+            const annotations = {};
+            let current = null;
+            contextData.Holidays.forEach((h, i) => {
+                if (h.name && !current) current = { name: h.name, start: i, end: i };
+                else if (h.name && current && h.name === current.name) current.end = i;
+                else if (!h.name && current) {
+                    annotations[current.name] = {
+                        type: 'box',
+                        xMin: forecastLabels[current.start],
+                        xMax: forecastLabels[current.end],
+                        backgroundColor: 'rgba(255,99,132,0.2)',
+                        borderColor: 'rgba(255,99,132,0.8)',
+                        borderWidth: 1,
+                        label: { content: current.name, display: true, position: 'start' }
+                    };
+                    current = null;
+                } else if (h.name && current && h.name !== current.name) {
+                    annotations[current.name] = {
+                        type: 'box',
+                        xMin: forecastLabels[current.start],
+                        xMax: forecastLabels[current.end],
+                        backgroundColor: 'rgba(255,99,132,0.2)',
+                        borderColor: 'rgba(255,99,132,0.8)',
+                        borderWidth: 1,
+                        label: { content: current.name, display: true, position: 'start' }
+                    };
+                    current = { name: h.name, start: i, end: i };
+                }
+            });
+            if (current) {
+                annotations[current.name] = {
+                    type: 'box',
+                    xMin: forecastLabels[current.start],
+                    xMax: forecastLabels[current.end],
+                    backgroundColor: 'rgba(255,99,132,0.2)',
+                    borderColor: 'rgba(255,99,132,0.8)',
+                    borderWidth: 1,
+                    label: { content: current.name, display: true, position: 'start' }
+                };
+            }
+            return annotations;
+        }
+
+        function buildPieChart(view, hour) {
+            let sumF1, sumF2, sumF3;
+            if (view === 'full') {
+                sumF1 = forecastF1.reduce((a,b) => a+b, 0);
+                sumF2 = forecastF2.reduce((a,b) => a+b, 0);
+                sumF3 = forecastF3.reduce((a,b) => a+b, 0);
+            } else {
+                const indices = forecastData.timestamps
+                    .map((t, i) => new Date(t).getHours() === hour ? i : -1)
+                    .filter(i => i >= 0);
+                sumF1 = indices.reduce((s, i) => s + forecastF1[i], 0);
+                sumF2 = indices.reduce((s, i) => s + forecastF2[i], 0);
+                sumF3 = indices.reduce((s, i) => s + forecastF3[i], 0);
+            }
+
+            pieChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['F1', 'F2', 'F3'],
+                    datasets: [{
+                        data: [sumF1, sumF2, sumF3],
+                        backgroundColor: ['#2563eb', '#16a34a', '#ea580c'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: view === 'full' ? 'Total Day Distribution' : `Hour ${hour}:00 Distribution` }
+                    }
+                }
+            });
+        }
+
+        function updateForecastTable(view, hour) {
+            const tbody = document.getElementById('forecastTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            let rows = [];
+            const timestamps = forecastData.timestamps;
+
+            if (view === 'full') {
+                rows = timestamps.map((t, i) => [t.substring(11, 16), forecastF1[i].toFixed(0), forecastF2[i].toFixed(0), forecastF3[i].toFixed(0), forecastTotal[i].toFixed(0)]);
+            } else {
+                timestamps.forEach((t, i) => {
+                    const h = new Date(t).getHours();
+                    if (h === hour) rows.push([t.substring(11, 16), forecastF1[i].toFixed(0), forecastF2[i].toFixed(0), forecastF3[i].toFixed(0), forecastTotal[i].toFixed(0)]);
+                });
+            }
+            rows.forEach(r => {
+                tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`;
+            });
+        }
+
+        function downloadCSV() {
+            let csv = "Datetime,F1_132KV_PowerConsumption,F2_132KV_PowerConsumption,F3_132KV_PowerConsumption,Total_Power\n";
+            forecastData.timestamps.forEach((t, i) => {
+                csv += `${t},${forecastF1[i].toFixed(2)},${forecastF2[i].toFixed(2)},${forecastF3[i].toFixed(2)},${forecastTotal[i].toFixed(2)}\n`;
+            });
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'forecast.csv'; a.click();
+        }
+
+        function buildWeatherSparklines() {
+            const vars = ['Temperature', 'Humidity', 'CloudCover', 'WindSpeed'];
+            const grid = document.getElementById('weatherGrid');
+            const emojiMap = {
+                'Temperature': '🌡️',
+                'Humidity': '💧',
+                'CloudCover': '☁️',
+                'WindSpeed': '💨'
+            };
+            vars.forEach(v => {
+                const card = document.createElement('div');
+                card.className = 'weather-card';
+                const emoji = emojiMap[v] || '📊';
+                card.innerHTML = `<h4><span class="emoji-big">${emoji}</span> ${v}</h4><canvas id="chart-${v}"></canvas>`;
+                grid.appendChild(card);
+                const vals = contextData[v];
+                const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+                new Chart(document.getElementById(`chart-${v}`).getContext('2d'), {
+                    type: 'line',
+                    data: { labels: forecastLabels, datasets: [{ data: vals, borderColor: '#2563eb', fill: false, pointRadius: 0, tension:0.3 }] },
+                    options: { responsive: true, plugins: { tooltip: {enabled:true} }, scales: { x:{display:false}, y:{title:{display:true, text:v}} } }
+                });
+                const avgDiv = document.createElement('div');
+                avgDiv.style.display = 'flex';
+                avgDiv.style.alignItems = 'center';
+                avgDiv.style.justifyContent = 'center';
+                avgDiv.style.gap = '0.3rem';
+                avgDiv.style.marginTop = '0.3rem';
+                avgDiv.innerHTML = `<span class="emoji" style="font-size:1.6rem;">${emoji}</span> <strong style="font-size:1.2rem;">${avg}</strong> <span style="font-size:0.8rem; color:#475569;">avg</span>`;
+                card.appendChild(avgDiv);
+            });
+            const start = forecastData.timestamps[0];
+            const end = forecastData.timestamps[forecastData.timestamps.length - 1];
+            document.getElementById('weatherTrendRange').textContent =
+                `${start} → ${end} (IST)`;
+        }
+
+        function buildCurrentWeather() {
+            const t = contextData.Temperature[0];
+            const h = contextData.Humidity[0];
+            const c = contextData.CloudCover[0];
+            const w = contextData.WindSpeed[0];
+            const card = document.getElementById('currentWeatherCard');
+            card.innerHTML = `
+                <h3>📍 Current Weather (Dhanbad) <span style="font-size:1.8rem;">🌤️</span></h3>
+                <div class="value" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                    <span style="font-size:3rem;">🌡️</span> ${t}°C
+                </div>
+                <div class="details">
+                    <div class="detail-item"><span class="label">💧 Humidity</span><span class="val">${h}%</span></div>
+                    <div class="detail-item"><span class="label">☁️ Cloud Cover</span><span class="val">${c}%</span></div>
+                    <div class="detail-item"><span class="label">💨 Wind</span><span class="val">${w} m/s</span></div>
+                </div>`;
+        }
+
+        function buildHourlyWeatherCards() {
+            const strip = document.getElementById('hourlyStrip');
+            strip.innerHTML = '';
+            const timestamps = contextData.timestamps;
+            const temp = contextData.Temperature;
+            const hum = contextData.Humidity;
+            const cloud = contextData.CloudCover;
+            const wind = contextData.WindSpeed;
+
+            let hourMap = {};
+            timestamps.forEach((t, i) => {
+                const hr = new Date(t).getHours();
+                if (!hourMap[hr]) hourMap[hr] = { temp:[], hum:[], cloud:[], wind:[] };
+                hourMap[hr].temp.push(temp[i]);
+                hourMap[hr].hum.push(hum[i]);
+                hourMap[hr].cloud.push(cloud[i]);
+                hourMap[hr].wind.push(wind[i]);
+            });
+
+            const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            for (let i = 0; i < 24; i++) {
+                const h = (currentHour + i) % 24;
+                const isNextDay = (currentHour + i) >= 24;  // true when we wrap past midnight
+                if (!hourMap[h]) continue;
+                const t = avg(hourMap[h].temp).toFixed(0);
+                const humAvg = avg(hourMap[h].hum).toFixed(0);
+                const cloudAvg = avg(hourMap[h].cloud).toFixed(0);
+                const wAvg = avg(hourMap[h].wind).toFixed(1);
+                const card = document.createElement('div');
+                card.className = 'hour-card';
+                card.innerHTML = `<div class="time">${h}:00</div>
+                                <div class="temp">🌡️ ${t}°</div>
+                                <div class="other">💧${humAvg}% ☁️${cloudAvg}% 💨${wAvg}m/s</div>
+                                ${isNextDay ? '<div class="next-day-badge">Tomorrow</div>' : ''}`;
+                strip.appendChild(card);
+            }
+        }
+
+        function buildHolidayTable() {
+            const tbody = document.getElementById('holidayBody');
+            const set = new Set();
+            contextData.Holidays.forEach((h, i) => {
+                if (h.name && !set.has(h.name)) {
+                    set.add(h.name);
+                    tbody.innerHTML += `<tr><td>${forecastData.timestamps[i].substring(0,10)}</td><td>${h.name}</td><td>${h.type||''}</td></tr>`;
+                }
+            });
+            const start = forecastData.timestamps[0];
+            const end = forecastData.timestamps[forecastData.timestamps.length - 1];
+            document.getElementById('holidayWindow').textContent =
+                `Forecast window: ${start} → ${end} (IST)`;
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="3">No holidays in next 24h</td></tr>';
+        }
+
+        init();
+    </script>
+</body>
+</html>
