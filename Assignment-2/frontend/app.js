@@ -562,7 +562,7 @@ document.getElementById('metricForm').addEventListener('submit', async function(
     }
     
     try {
-        const response = await fetch(`${API_BASE}/metrics`, {
+        const response = await fetch(`${API_BASE}/metrics/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -584,7 +584,7 @@ document.getElementById('metricForm').addEventListener('submit', async function(
 
 async function loadMetrics() {
     try {
-        const response = await fetch(`${API_BASE}/metrics`);
+        const response = await fetch(`${API_BASE}/metrics/`);
         const metrics = await response.json();
         
         const container = document.getElementById('metricsList');
