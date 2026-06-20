@@ -444,7 +444,7 @@ document.getElementById('emissionForm').addEventListener('submit', async functio
     }
     
     try {
-        const response = await fetch(`${API_BASE}/emissions/`, {
+        const response = await fetch(`${API_BASE}/emissions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -562,7 +562,7 @@ document.getElementById('metricForm').addEventListener('submit', async function(
     }
     
     try {
-        const response = await fetch(`${API_BASE}/metrics/`, {
+        const response = await fetch(`${API_BASE}/metrics`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -584,7 +584,7 @@ document.getElementById('metricForm').addEventListener('submit', async function(
 
 async function loadMetrics() {
     try {
-        const response = await fetch(`${API_BASE}/metrics/`);
+        const response = await fetch(`${API_BASE}/metrics`);
         const metrics = await response.json();
         
         const container = document.getElementById('metricsList');
@@ -890,7 +890,7 @@ document.getElementById('overrideModal').addEventListener('click', function(e) {
 
 async function loadAuditLog() {
     try {
-        const response = await fetch(`${API_BASE}/emissions/`);
+        const response = await fetch(`${API_BASE}/emissions`);
         const records = await response.json();
         
         const overrides = records.filter(r => r.is_override === true);
