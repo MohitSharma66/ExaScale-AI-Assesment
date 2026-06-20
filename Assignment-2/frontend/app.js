@@ -93,7 +93,7 @@ async function refreshDashboard() {
 
 async function loadKPIs() {
     try {
-        const response = await fetch(`${API_BASE}/emissions/`);
+        const response = await fetch(`${API_BASE}/emissions`);
         const records = await response.json();
         
         let totals = { scope1: 0, scope2: 0, scope3: 0, all: 0 };
@@ -497,7 +497,7 @@ function showCalculationResult(result) {
 
 async function loadRecentEntries() {
     try {
-        const response = await fetch(`${API_BASE}/emissions/`);
+        const response = await fetch(`${API_BASE}/emissions`);
         const records = await response.json();
         
         const container = document.getElementById('recentEntries');
