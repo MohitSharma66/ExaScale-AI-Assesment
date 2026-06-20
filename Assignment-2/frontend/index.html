@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌍 GHG Emissions Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 GHG Emissions Reporting Platform</h1>
+            <p class="subtitle">Track, calculate, and visualize your carbon footprint</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showTab('entry')">✏️ Enter Data</button>
+            <button class="tab" onclick="showTab('metrics')">📈 Business Metrics</button>
+            <button class="tab" onclick="showTab('intensity')">📊 Intensity Analysis</button>
+            <button class="tab" onclick="showTab('source-details')">🔍 Source Details</button>
+            <button class="tab" onclick="showTab('records')">📝 All Records</button>
+            <button class="tab" onclick="showTab('audit')">📋 Audit Log</button>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Total Emissions (2024)</h4>
+                    <div class="kpi-value" id="totalEmissions">-</div>
+                    <span class="kpi-unit">tCO₂e</span>
+                </div>
+                <div class="kpi-card">
+                    <h4>Emission Intensity</h4>
+                    <div style="display:flex; gap:6px; justify-content:center; margin-bottom:6px; flex-wrap:wrap;">
+                        <select id="dashIntensityMetric" onchange="loadKPIs()" style="font-size:11px; padding:2px 4px; border:1px solid #e2e8f0; border-radius:4px;">
+                            <option value="Steel Production">Steel Production</option>
+                            <option value="Employees">Employees</option>
+                        </select>
+                        <select id="dashIntensityYear" onchange="loadKPIs()" style="font-size:11px; padding:2px 4px; border:1px solid #e2e8f0; border-radius:4px;">
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="kpi-value" id="intensityValue">-</div>
+                    <span class="kpi-unit" id="intensityUnit">kgCO₂e/unit</span>
+                </div>
+                <div class="kpi-card">
+                    <h4>Scope 1</h4>
+                    <div class="kpi-value" id="scope1Total">-</div>
+                    <span class="kpi-unit">tCO₂e</span>
+                </div>
+                <div class="kpi-card">
+                    <h4>Scope 2</h4>
+                    <div class="kpi-value" id="scope2Total">-</div>
+                    <span class="kpi-unit">tCO₂e</span>
+                </div>
+                <div class="kpi-card">
+                    <h4>Scope 3</h4>
+                    <div class="kpi-value" id="scope3Total">-</div>
+                    <span class="kpi-unit">tCO₂e</span>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3>📊 Year-over-Year Comparison</h3>
+                    <div class="chart-container"><canvas id="yoyChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🍩 Emission Hotspots (Scope 1)</h3>
+                    <div class="chart-container"><canvas id="hotspotChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🍩 Emission Hotspots (Scope 2)</h3>
+                    <div class="chart-container"><canvas id="hotspotChart2"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🍩 Emission Hotspots (Scope 3)</h3>
+                    <div class="chart-container"><canvas id="hotspotChart3"></canvas></div>
+                </div>
+                <div class="chart-card full-width">
+                    <h3>📈 Quarterly Emission Trend</h3>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <button onclick="loadTrendChart('quarterly')" class="btn-small active" id="trendQuarterly">Quarterly</button>
+                        <select id="trendYear" onchange="loadTrendChart('quarterly')" style="font-size:12px; padding:4px 8px; border:2px solid #e2e8f0; border-radius:6px; background:white;">
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ENTRY -->
+        <div id="entry" class="tab-content">
+            <div class="entry-grid">
+                <div class="card">
+                    <h3>✏️ Submit New Emission Record</h3>
+                    <form id="emissionForm">
+                        <div class="form-group">
+                            <label>Scope *</label>
+                            <select id="formScope" required>
+                                <option value="1">Scope 1 (Direct Emissions)</option>
+                                <option value="2">Scope 2 (Indirect Emissions)</option>
+                                <option value="3">Scope 3 (Value Chain)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Material / Energy Type *</label>
+                            <input type="text" id="formMaterial" placeholder="e.g., Diesel, Coal, Electricity" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Section / Process</label>
+                            <input type="text" id="formSection" placeholder="e.g., Pellet Plant, EAF">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input type="number" id="formQuantity" step="0.01" placeholder="e.g., 100" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Activity Date *</label>
+                            <input type="date" id="formDate" required>
+                        </div>
+
+                        <div id="scope3Fields" style="display: none;">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <input type="text" id="formCategory" placeholder="e.g., Business Travel">
+                            </div>
+                            <div class="form-group">
+                                <label>Transportation Mode</label>
+                                <input type="text" id="formTransport" placeholder="e.g., Air, Road">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>User ID *</label>
+                            <input type="text" id="formUserId" placeholder="e.g., john.doe" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Position *</label>
+                            <select id="formPosition" required>
+                                <option value="CEO">CEO</option>
+                                <option value="VP">VP</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Employee">Employee</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-primary">🚀 Calculate & Save</button>
+                    </form>
+
+                    <div id="calculationResult" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px; background: #f0f9ff; border: 1px solid #b3d4fc;">
+                        <h4>✅ Calculation Result</h4>
+                        <div id="resultContent"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📋 Recent Entries</h3>
+                    <div id="recentEntries"><p class="text-muted">Loading...</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BUSINESS METRICS -->
+        <div id="metrics" class="tab-content">
+            <div class="entry-grid">
+                <div class="card">
+                    <h3>📈 Submit Business Metric</h3>
+                    <form id="metricForm">
+                        <div class="form-group">
+                            <label>Metric Date *</label>
+                            <input type="date" id="metricDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Metric Name *</label>
+                            <input type="text" id="metricName" placeholder="e.g., Steel Production, Employees" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Value *</label>
+                            <input type="number" id="metricValue" step="0.01" placeholder="e.g., 45000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit *</label>
+                            <input type="text" id="metricUnit" placeholder="e.g., tonnes, count, INR" required>
+                        </div>
+                        <button type="submit" class="btn-primary">💾 Save Metric</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>📋 All Metrics</h3>
+                    <div id="metricsList"><p class="text-muted">Loading...</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="intensity" class="tab-content">
+            <div class="card">
+                <h3>📊 Emission Intensity Analysis</h3>
+                <p class="text-muted">Calculate emission intensity per unit of production for any period</p>                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+                        <label>Metric:</label>
+                        <select id="intensityMetric" onchange="updateIntensityAnalysis()">
+                            <option value="Steel Production">Steel Production (tonnes)</option>
+                            <option value="Employees">Employees (count)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+                        <label>Period:</label>
+                        <select id="intensityPeriod" onchange="updateIntensityAnalysis()">
+                            <option value="2024-Q1">Q1 2024 (Jan-Mar)</option>
+                            <option value="2024-Q2">Q2 2024 (Apr-Jun)</option>
+                            <option value="2024-Q3">Q3 2024 (Jul-Sep)</option>
+                            <option value="2024-Q4">Q4 2024 (Oct-Dec)</option>
+                            <option value="2024-FY" selected>Full Year 2024</option>
+                            <option value="2023-Q1">Q1 2023 (Jan-Mar)</option>
+                            <option value="2023-Q2">Q2 2023 (Apr-Jun)</option>
+                            <option value="2023-Q3">Q3 2023 (Jul-Sep)</option>
+                            <option value="2023-Q4">Q4 2023 (Oct-Dec)</option>
+                            <option value="2023-FY">Full Year 2023</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="intensityResults" style="margin-top: 30px; display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 14px; color: #718096;">Period</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #2d3748;" id="intensityPeriodDisplay">-</div>
+                        </div>
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 14px; color: #718096;">Metric</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #2d3748;" id="intensityMetricDisplay">-</div>
+                        </div>
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 14px; color: #718096;">Total Emissions</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #2b6cb0;" id="intensityTotalEmissions">-</div>
+                        </div>
+                        <div style="background: #f7fafc; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 14px; color: #718096;">Production</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #2d3748;" id="intensityProduction">-</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; background: linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%); padding: 30px; border-radius: 12px; text-align: center;">
+                        <div style="color: #bee3f8; font-size: 14px;">Emission Intensity</div>
+                        <div style="color: white; font-size: 48px; font-weight: 700;" id="intensityResultValue">-</div>
+                        <div style="color: #bee3f8; font-size: 18px;" id="intensityResultUnit">kgCO₂e/unit</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px;">📋 How to use this metric</h4>
+                        <ul style="color: #4a5568; line-height: 1.8; padding-left: 20px;">
+                            <li><strong>Steel Production:</strong> Measures emissions per tonne of steel produced. Lower is better.</li>
+                            <li><strong>Employees:</strong> Measures emissions per employee. Useful for service-based companies.</li>
+                            <li><strong>Add more metrics</strong> in the "Business Metrics" tab to customize your analysis.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div id="intensityNoData" style="margin-top: 30px; display: block; text-align: center; padding: 40px; background: #f7fafc; border-radius: 10px;">
+                    <p style="color: #718096;">Submit business metrics in the "Business Metrics" tab to see intensity analysis</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOURCE DETAILS -->
+        <div id="source-details" class="tab-content">
+            <div class="card">
+                <h3>🔍 Emissions by Source</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Scope:</label>
+                        <select id="sourceScope" onchange="loadSourceOptions()">
+                            <option value="1">Scope 1</option>
+                            <option value="2">Scope 2</option>
+                            <option value="3">Scope 3</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Source:</label>
+                        <select id="sourceSelect" onchange="loadSourceDetails()">
+                            <option value="">-- Select --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="sourceTotal" style="display: none; margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                    <h4>Total Emissions: <span id="sourceTotalValue" style="color: #2b6cb0; font-size: 24px;">0</span> tCO₂e</h4>
+                </div>
+
+                <div id="sourceRecords" style="margin-top: 20px;">
+                    <p class="text-muted">Select a source to view records</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECORDS -->
+        <div id="records" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <h3 style="margin: 0;">📝 All Emission Records</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <select id="filterScope" onchange="applyFilters(); loadMaterialFilter();">
+                            <option value="">All Scopes</option>
+                            <option value="1">Scope 1</option>
+                            <option value="2">Scope 2</option>
+                            <option value="3">Scope 3</option>
+                        </select>
+                        <select id="filterMaterial" onchange="applyFilters()">
+                            <option value="">All Materials</option>
+                        </select>
+                        <button onclick="exportFilteredCSV()" class="btn-primary" style="width: auto; padding: 8px 16px;">📥 Download CSV</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Date</th><th>Scope</th><th>Material</th>
+                                <th>Quantity</th><th>Emissions (tCO₂e)</th><th>Status</th><th>Source</th><th>Created By</th><th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody">
+                            <tr><td colspan="10" style="text-align: center;">No records found</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIT -->
+        <div id="audit" class="tab-content">
+            <div class="card">
+                <h3>📋 Audit Log - Manual Overrides</h3>
+                <div style="overflow-x: auto;">
+                    <table id="auditTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th><th>Record ID</th><th>Scope</th>
+                                <th>Action</th><th>Old Value</th><th>New Value</th>
+                                <th>Changed By</th><th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditBody">
+                            <tr><td colspan="8" style="text-align: center;">No audit records yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Override Modal -->
+    <div id="overrideModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+            <h3>✏️ Override Emission Record</h3>
+            <p style="color: #718096;">Record #<span id="overrideRecordId"></span></p>
+            <form id="overrideForm">
+                <div class="form-group">
+                    <label>New Quantity *</label>
+                    <input type="number" id="overrideQuantity" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Reason *</label>
+                    <textarea id="overrideReason" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>User ID *</label>
+                    <input type="text" id="overrideUserId" required>
+                </div>
+                <div class="form-group">
+                    <label>Position *</label>
+                    <select id="overridePosition" required>
+                        <option value="CEO">CEO</option>
+                        <option value="VP">VP</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Employee">Employee</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">✅ Confirm Override</button>
+                    <button type="button" onclick="closeOverrideModal()" style="flex: 1; background: #fc8181; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
