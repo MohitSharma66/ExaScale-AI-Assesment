@@ -177,7 +177,7 @@ flowchart TD
 
 | Decision | Rationale |
 |----------|-----------|
-| **MultiOutputRegressor + Ridge** | Best R² (~0.9) after comparing Ridge, Lasso, RandomForest; L2 regularization handled feature interactions well |
+| **MultiOutputRegressor + Ridge** | Best R² (~0.93) after comparing Ridge, Lasso, RandomForest; L2 regularization handled feature interactions well |
 | **10-minute resampling** | Open-Meteo provides hourly data; forward-fill to 10-min is acceptable for weather (slow-changing) |
 | **IQR outlier clipping** | Robust to skewed distributions, preserves data volume |
 | **Time-based interpolation** | Respects temporal structure better than mean/median imputation |
@@ -254,7 +254,8 @@ The cleaned output is saved as `data/cleaned_load.csv` and is used directly by `
 | **Alpha** | 0.1 |
 | **Preprocessing** | StandardScaler |
 | **Wrapper** | MultiOutputRegressor |
-| **R² Score** | ~0.8966 |
+| **R² Score** | ~0.9267 |
+| **Selection Method** | Best fold from 5-fold TimeSeriesSplit CV |
 | **Features** | 20+ engineered features |
 | **Targets** | F1, F2, F3 (3 feeders simultaneously) |
 | **Artifacts** | `models/demand_model.pkl`, `models/feature_names.pkl` |
@@ -396,7 +397,7 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 | Weather Data Sourcing | 10 | Real-time Open-Meteo API integration for Dhanbad (Temperature, Humidity, Cloud Cover, Wind Speed) |
 | Local Holidays | 10 | Self-sourced 20+ Dhanbad-specific holidays in `data/local_holidays.csv` (Chhath Puja, Sarhul, Karma Puja, mining holidays, etc.) |
 | Feature Engineering | 10 | Time features, lag features (1d, 7d), rolling mean (24h), holiday binary + categorical, weather features |
-| Model Justification | 15 | Compared Ridge, Lasso, RandomForest in `Notebook.ipynb`; selected Ridge based on R² and MAPE |
+| Model Justification | 15 | Compared Ridge, Lasso, RandomForest in Notebook.ipynb using 5-fold TimeSeriesSplit CV; selected best CV fold Ridge model (R² = 0.9267) |
 | Model Implementation | 10 | MultiOutputRegressor + Ridge + StandardScaler pipeline; saved as `models/demand_model.pkl` with `models/feature_names.pkl` |
 | Forecast API | 5 | `GET /forecast` returns 144-block prediction for F1, F2, F3 |
 | Context API | 5 | `GET /context` returns weather + holiday data for frontend visualization |
