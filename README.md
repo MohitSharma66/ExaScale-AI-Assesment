@@ -74,8 +74,8 @@ Navigate to the respective project directory and follow its `README.md` for:
 
 | Assignment                                      | Demo                        |
 | ----------------------------------------------- | --------------------------- |
-| Assignment 1 – Power Demand Forecasting         | *(Add deployment URL here)* |
-| Assignment 2 – GHG Emissions Reporting Platform | *(Add deployment URL here)* |
+| Assignment 1 – Power Demand Forecasting         | *https://assignment-1-sqif.onrender.com* |
+| Assignment 2 – GHG Emissions Reporting Platform | *https://alert-dream-production-cbd7.up.railway.app* |
 
 ---
 
