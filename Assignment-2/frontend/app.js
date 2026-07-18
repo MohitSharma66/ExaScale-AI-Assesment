@@ -6,6 +6,9 @@ const API_BASE = (() => {
     if (hostname.includes('railway.app')) {
         return 'https://brilliant-strength-production-df8a.up.railway.app/api';
     }
+    if (hostname.includes('onrender.com')) {
+        return 'https://exascale-ai-assesment.onrender.com/api';
+    }
     return '/api';
 })();
 
